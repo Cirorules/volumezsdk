@@ -12,7 +12,6 @@ class Token:
         self.id_token = id_token
         self.refresh_token = refresh_token
         self.token_type = token_type
-        self.tenant_token = ""
 
 class Authentication:
     ttoken_url = "/tenant/token"
@@ -20,12 +19,15 @@ class Authentication:
         req = requests.post(api_url+auth_url, data=json.dumps({'email': email, 'password': password}))
         if req.status_code != 200:
             return {"error": "Failed to sign in to API", "reason": req.reason}
-        res = json.loads(req.text)
-        tokens = Token(access_token=res["AccessToken"], expires=res["ExpiresIn"], id_token=res["IdToken"], refresh_token=res["RefreshToken"], token_type=res["TokenType"])
-        headers["authorization"] = tokens.id_token
-        req = requests.get(api_url+self.ttoken_url, headers=headers)
-        if req.status_code != 200:
-            return {"error": "Failed to get tenant token", "reason": req.reason}
-        res = json.loads(req.text)
-        tokens.tenant_token = res["AccessToken"]
-        return tokens
+        try:
+            res = json.loads(req.text)
+        except:
+            print("Authentication succeeded but received an invalid response from the API. Unable to continue")
+            return
+        try:
+            tokens = Token(access_token=res["AccessToken"], expires=res["ExpiresIn"], id_token=res["IdToken"], refresh_token=res["RefreshToken"], token_type=res["TokenType"])
+        except Exception as e:
+            print(f"Unable to create token object. Please try again. Exception: {str(e)}")
+        
+        self.tokens = tokens
+        return

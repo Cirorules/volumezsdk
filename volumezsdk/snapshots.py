@@ -9,12 +9,20 @@ class Snapshot:
         else:
             print(f"The snapshot object takes an argument of a dictionary defining the snapshot details")
     
-    def get_snapshot(self, token):
+    def get_snapshot(self, token, vol_name=None, snap_name=None):
         heads = headers
         heads["authorization"] = token.id_token
-        req = requests.get(api_url+f"/volumes/{self.volumename}/snapshots/{self.name}", headers=heads)
+        if snap_name:
+            get_snap = snap_name
+        else:
+            get_snap = self.name
+        if vol_name:
+            get_vol = vol_name
+        else:
+            get_vol = self.volumename
+        req = requests.get(api_url+f"/volumes/{get_vol}/snapshots/{get_snap}", headers=heads)
         if req.status_code != 200:
-            print(f"Failed to get properties of snapshot {self.snapshotid}. Check ID and try again")
+            print(f"Failed to get properties of snapshot {get_snap}. Check ID and try again")
             print(f"Reason: {req.reason}")
             return
         self.__dict__ = json.loads(req.text)

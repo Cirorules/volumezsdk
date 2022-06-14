@@ -5,4 +5,5 @@ api_url = "https://api.volumez.com"
 nodes_url = "/nodes"
 auth_url = "/signin"
 volumes_url = "/volumes"
+attachments_url = "/attachments"
 headers = {"Content-type": "application/json", "Accept":"text/plain"}

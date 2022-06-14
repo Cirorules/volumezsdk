@@ -1,6 +1,6 @@
 import requests
 import json
-from .auth import api_url, headers, nodes_url
+from .settings import api_url, headers, nodes_url
 
 
 class Node:
@@ -48,6 +48,14 @@ class Nodes:
             n.new(r)
             self.nodes.append(n)
         print(f"Got {len(self.nodes)} nodes from the API and stored in Nodes.nodes")
+
+    def filter(self, node_name):
+        if not hasattr(self, 'nodes'):
+            self.get_nodes()
+        for node in self.nodes:
+            if node.name == node_name:
+                return node
+        print(f"Node {node_name} not found.")
 
     def __str__(self):
         return f"Volumez Nodes"
