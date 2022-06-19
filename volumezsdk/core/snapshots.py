@@ -1,8 +1,10 @@
 import requests
 import json
-from .settings import snap_url, api_url, headers
+from ..common.settings import snap_url, api_url, headers
 
 class Snapshot:
+    def __init__(self, token):
+        self.token=token
     def new(self, snaps_dict):
         if type(snaps_dict) is dict:
             self.__dict__ = snaps_dict
@@ -66,7 +68,18 @@ class Snapshots:
     def __init__(self, token):
         self.token = token
         self.headers = headers
-        self.headers["authorization"] = self.token.id_token
+        self.headers["authorization"] = self.token
+        self.snapshot_list = self.get_snapshots()
+
+    def get_snapshot(self, volume, snapshot):
+        req = requests.get(api_url+f"/volumes/{volume}/snapshots/{snapshot}", headers=self.headers)
+        if req.status_code != 200:
+            print(f"Failed to get properties of snapshot {snapshot}. Check snapshot name and try again")
+            print(f"Reason: {req.reason}")
+            return
+        snap = Snapshot()
+        snap.new(json.loads(req.text))
+        return snap
 
     def get_snapshots(self, vol=None):
         if vol:
@@ -78,13 +91,12 @@ class Snapshots:
             print(f"Failed to get snapshots from API. {req.reason}")
             return
         res = json.loads(req.text)
-        self.snapshots = []
+        snapshot_list = []
         for r in res:
-            s = Snapshot()
+            s = Snapshot(self.token)
             s.new(r)
-            self.snapshots.append(s)
-        print(f"Got {len(self.snapshots)} snapshots from API")
-        return
+            snapshot_list.append(s)
+        return snapshot_list
 
     def __str__(self):
         return f"Volumez Snapshots"

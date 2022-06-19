@@ -1,10 +1,9 @@
 import requests
 import json
 
-from volumezsdk import attachments
-from .settings import api_url, headers, volumes_url
+from ..common.settings import api_url, headers, volumes_url
 from .snapshots import Snapshot
-from .attachments import Attachment
+from .attachments import Attachment, Attachments
 
 volhelp = """
 {
@@ -40,6 +39,9 @@ snaphelp = """
     }
 """
 class Volume:
+    def __init__(self, token):
+        self.token=token
+
     def help(self, command=None):
         if command:
             if command == 'new':
@@ -136,7 +138,7 @@ class Volume:
         res = json.loads(req.text)
         snapshots = []
         for r in res:
-            s = Snapshot()
+            s = Snapshot(self.token)
             s.new(r)
             snapshots.append(s)
         return snapshots
@@ -184,7 +186,7 @@ class Volume:
         res = json.loads(req.text)
         attachments = []
         for r in res:
-            a = Attachment()
+            a = Attachment(self.token)
             a.new(r)
             attachments.append(a)
         return attachments
@@ -207,24 +209,46 @@ class Volume:
 
 
     def __str__(self):
-        return f"Volumez Volume {self.voluemid}"
+        return f"Volumez Volume {self.volumeid} {self.name}"
 
 
 class Volumes:
     def __init__(self, token):
         self.token = token
         self.headers = headers
-        self.headers["authorization"] = self.token.id_token
+        self.headers["authorization"] = self.token
+        self.volume_list = self.get_volumes()
 
+    def get_volume(self, volume):
+        req = requests.get(api_url+volumes_url+f"/{volume}", headers=self.headers)
+        if req.status_code != 200:
+            print(f"Failed to get volume properties for {volume}. {req.reason}")
+            return
+        n = Volume(self.token)
+        n.new(json.loads(req.text))
+        return n
+        
     def get_volumes(self):
         req = requests.get(api_url+volumes_url, headers=self.headers)
         if req.status_code != 200:
             print(f"Error getting a list of volumes. {req.reason}")
             return
         res = json.loads(req.text)
-        self.volumes = []
+        volume_list = []
         for r in res:
-            v = Volume()
+            v = Volume(self.token)
             v.new(r)
-            self.volumes.append(v)
-        return
+            volume_list.append(v)
+        return volume_list
+
+    def filter(self, volumes=None, **kwargs):
+        if not volumes:
+            volumes = self.volume_list
+        filtered_list = []
+        for n in volumes:
+            if all(eval('"%s"=="%s"' % (getattr(n,k), v)) for k, v in kwargs.items()):
+                filtered_list.append(n)
+        return filtered_list
+
+    def __str__(self):
+        return f"Volumez Volume"

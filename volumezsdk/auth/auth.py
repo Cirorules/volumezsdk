@@ -2,7 +2,13 @@ from email import header
 from os import access
 import requests
 import json
-from .settings import api_url, headers, auth_url
+from ..common.settings import api_url, headers, auth_url
+from ..core.attachments import Attachments
+from ..core.jobs import Jobs
+from ..core.nodes import Nodes
+from ..core.policies import Policies
+from ..core.snapshots import Snapshots
+from ..core.volumes import Volumes
 
 
 class Token:
@@ -13,8 +19,9 @@ class Token:
         self.refresh_token = refresh_token
         self.token_type = token_type
 
-class Authentication:
+class VolumezAPI:
     ttoken_url = "/tenant/token"
+
     def signin(self, email, password):
         req = requests.post(api_url+auth_url, data=json.dumps({'email': email, 'password': password}))
         if req.status_code != 200:
@@ -24,10 +31,14 @@ class Authentication:
         except:
             print("Authentication succeeded but received an invalid response from the API. Unable to continue")
             return
-        try:
-            tokens = Token(access_token=res["AccessToken"], expires=res["ExpiresIn"], id_token=res["IdToken"], refresh_token=res["RefreshToken"], token_type=res["TokenType"])
-        except Exception as e:
-            print(f"Unable to create token object. Please try again. Exception: {str(e)}")
-        
-        self.tokens = tokens
+        self.token = res["IdToken"]
+        self._initialize()
         return
+
+    def _initialize(self):
+        self.attachements = Attachments(self.token)
+        self.jobs = Jobs(self.token)
+        self.nodes = Nodes(self.token)
+        self.volumes = Volumes(self.token)
+        self.policies = Policies(self.token)
+        self.snapshots = Snapshots(self.token)
