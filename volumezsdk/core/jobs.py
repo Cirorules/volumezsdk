@@ -20,10 +20,8 @@ class Job:
 
 
 class Jobs:
-    def __init__(self, token):
-        self.token = token
+    def __init__(self, headers):
         self.headers = headers
-        self.headers["authorization"] = self.token
         self.jobs_list = self.get_jobs()
 
     def get_job(self, job):
@@ -43,7 +41,7 @@ class Jobs:
         res = json.loads(req.text)
         jobs_list = []
         for r in res:
-            j = Job(self.token)
+            j = Job(self.headers)
             j.new(r)
             jobs_list.append(j)
         return jobs_list

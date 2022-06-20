@@ -2,13 +2,14 @@ from email import header
 from os import access
 import requests
 import json
-from ..common.settings import api_url, headers, auth_url
+from ..common.settings import api_url, get_headers, auth_url
 from ..core.attachments import Attachments
 from ..core.jobs import Jobs
 from ..core.nodes import Nodes
 from ..core.policies import Policies
 from ..core.snapshots import Snapshots
 from ..core.volumes import Volumes
+from ..core.media import Medias
 
 
 class Token:
@@ -21,6 +22,14 @@ class Token:
 
 class VolumezAPI:
     ttoken_url = "/tenant/token"
+    def _initialize(self):
+        self.attachements = Attachments(self.headers)
+        self.jobs = Jobs(self.headers)
+        self.medias = Medias(self.headers)
+        self.nodes = Nodes(self.headers)
+        self.volumes = Volumes(self.headers)
+        self.policies = Policies(self.headers)
+        self.snapshots = Snapshots(self.headers)
 
     def signin(self, email, password):
         req = requests.post(api_url+auth_url, data=json.dumps({'email': email, 'password': password}))
@@ -31,14 +40,6 @@ class VolumezAPI:
         except:
             print("Authentication succeeded but received an invalid response from the API. Unable to continue")
             return
-        self.token = res["IdToken"]
+        self.headers = get_headers(res["IdToken"])
         self._initialize()
         return
-
-    def _initialize(self):
-        self.attachements = Attachments(self.token)
-        self.jobs = Jobs(self.token)
-        self.nodes = Nodes(self.token)
-        self.volumes = Volumes(self.token)
-        self.policies = Policies(self.token)
-        self.snapshots = Snapshots(self.token)

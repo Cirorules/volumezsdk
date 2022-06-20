@@ -4,24 +4,20 @@ from ..common.settings import api_url, headers, nodes_url
 
 
 class Node:
-    def __init__(self, token):
-        self.token=token
-
-    def new(self, nodes_dict):
-        if type(nodes_dict) is dict:
-            self.__dict__ = nodes_dict
-        else:
-            print("The Node object takes and argument of a dictionary defining the node attributes.")
+    def new(self, nodes_dict=None):
+        if nodes_dict:
+            if type(nodes_dict) is dict:
+                self.__dict__ = nodes_dict
+            else:
+                print("If provided, the Node object takes and argument of a dictionary defining the node attributes.")
 
     def __str__(self):
         return f"Volumez Node {self.name}"
 
 
 class Nodes:
-    def __init__(self, token):
-        self.token = token
+    def __init__(self, headers):
         self.headers = headers
-        self.headers["authorization"] = self.token
         self.node_list = self.get_nodes()
 
     def get_node(self, node_name):
@@ -34,7 +30,7 @@ class Nodes:
             else:
                 print(f"Error getting properties of the node {req.status_code} status")
             return
-        n = Node(self.token)
+        n = Node(self.headers)
         n.new(json.loads(req.text))
         return n
 
@@ -46,7 +42,7 @@ class Nodes:
         res = json.loads(req.text)
         node_list = []
         for r in res:
-            n = Node(self.token)
+            n = Node()
             n.new(r)
             node_list.append(n)
         return node_list
@@ -55,8 +51,15 @@ class Nodes:
         if not nodes:
             nodes = self.node_list
         filtered_list = []
+        oper_list = []
+        for k, v in kwargs.items():
+            try:
+                key, oper = k.split("__")
+                oper_list.append({'attribute': key, 'operator':opers[oper], 'value': v})
+            except ValueError:
+                oper_list.append({'attribute': k, 'operator':'==', 'value':v})
         for n in nodes:
-            if all(eval('"%s"=="%s"' % (getattr(n,k), v)) for k, v in kwargs.items()):
+            if all(eval('val1%sval2' % (o['operator']), {'val1': getattr(n,o['attribute']), 'val2': o['value']} ) for o in oper_list):
                 filtered_list.append(n)
         return filtered_list
 
